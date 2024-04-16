@@ -1,6 +1,8 @@
 import socket
 import sys
 
+TEST_FILE = "./clientFiles/outroTeste.txt"
+
 port = 5000
 host = "localhost"
 
@@ -15,17 +17,27 @@ def createSocket():
         sys.exit()
 
 def sendMessagesToServer(s):
-    while(1):
+ 
         msg = input('\nEnter message to send: ')
         msg = msg.encode()
 
         try:
             s.sendto(msg, (host, port))
 
-            data, adress = s.recvfrom(1024)
+
+            receive = open(TEST_FILE, "a")
+
+            while (1):
+                data = s.recv(1024)
+                data = data.decode()
+                if(data == "game over"):
+                    break
+                receive.write(data)
+
+            receive.close()
             
-            print('\nServer reply: ')
-            print(data)
+            #print('\nServer reply: ')
+            #print(data)
 
         except socket.error:
             print(socket.error)
