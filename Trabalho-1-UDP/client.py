@@ -1,5 +1,6 @@
 import socket
 import sys
+from operator import itemgetter
 
 TEST_FILE = "./clientFiles/outroTeste.txt"
 
@@ -18,23 +19,72 @@ def createSocket():
 
 def sendMessagesToServer(s):
  
-        msg = input('\nEnter message to send: ')
+        text = input('\nEscreva o nome do arquivo que deseja acessar: ')
+        msg = "GET " + text
         msg = msg.encode()
+
+        lost = input('\nDeseja simular a perda de dado(digite sim ou não)?')
+
 
         try:
             s.sendto(msg, (host, port))
+            file = open(TEST_FILE, "a")
+            rightSockets = []
+            wrongSockets = []
 
-
-            receive = open(TEST_FILE, "a")
-
+            j = 0
             while (1):
-                data = s.recv(1024)
-                data = data.decode()
-                if(data == "game over"):
-                    break
-                receive.write(data)
+                receive = s.recv(1050)
+                receive = receive.decode()
 
-            receive.close()
+                if receive == "game over":
+                    break
+                elif receive == "Formato de requisição não aceito" or receive == "Arquivo não encontrado":
+                    print(receive)
+                    sys.exit()
+
+                res = receive.split("-///-")
+
+                lenghtData = res[0]
+                socketNumber = res[1]
+                data = res[2]
+
+                if lost=="sim" and (j==0 or j==1):
+                    data = ""
+                j = j+1
+
+                if len(data) != int(lenghtData):
+                    wrongSockets.append(socketNumber)
+                else:
+                    rightSockets.append([int(socketNumber), data])
+                
+
+            if len(wrongSockets) > 0:
+                msg = wrongSockets[0]
+                for i in range(1, len(wrongSockets)):
+                    msg = msg + "," + wrongSockets[i]
+                msg = msg.encode()
+                s.sendto(msg, (host, port))
+                for i in range(0, len(wrongSockets)):
+                    receive = s.recv(1024)
+                    receive = receive.decode()
+                    rightSockets.append([int(wrongSockets[i]), receive])
+
+                rightSockets.sort(key=itemgetter(0))
+
+            else:
+                msg = "OK"
+                msg = msg.encode()
+                s.sendto(msg, (host, port))
+
+            for i in range(0, len(rightSockets)):
+                file.write(rightSockets[i][1])
+
+
+                    
+
+
+            file.close()
             
             #print('\nServer reply: ')
             #print(data)

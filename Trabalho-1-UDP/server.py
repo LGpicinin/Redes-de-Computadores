@@ -1,10 +1,11 @@
 import socket
 import sys
 import math
-
+import os
 
 TEST_FILE = './serverFiles/teste.txt'
 NAMES_FILE = './serverFiles/names.txt'
+PATH = './serverFiles/'
 
 port = 5000
 host = "localhost"
@@ -33,53 +34,80 @@ def bindSocket(s):
 def runServer(s):
     while 1:
         data, adress = s.recvfrom(1024)
-
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 1024) 
+        print("Nova requisição de cliente")
         
         if not data:
             break
 
         data = data.decode()
+        data = data.split(" ")
+
+        if data[0] != "GET":
+            msg = "Formato de requisição não aceito"
+            msg = msg.encode()
+            s.sendto(msg, adress)
+            continue
+
         fileToOpen = ""
 
-        if data == "GET teste.txt":
-            fileToOpen = TEST_FILE
+        fileToOpen = PATH + data[1]
 
-        else:
-            fileToOpen = NAMES_FILE
+        if not os.path.exists(fileToOpen):
+            msg = "Arquivo não encontrado"
+            msg = msg.encode()
+            s.sendto(msg, adress)
+            continue
 
         file = open(fileToOpen, "rt")
-        if not file:
-            print("Erro ao abrir arquivo")
+        i = 1
+        dataToSend = file.read(1024)
 
+        print("Enviando sockets")
+        while dataToSend:
+            lenght = str(len(dataToSend))
+            socketNumber = str(i)
 
-        i = 0
-        reply = file.read(1024)
+            reply = lenght + "-///-" + socketNumber + "-///-" + dataToSend
+            reply = reply.encode()
 
-        while reply:
-            s.sendto(reply.encode(), adress)
-            reply = file.read(1024)
+            s.sendto(reply, adress)
+            dataToSend = file.read(1024)
+            i = i + 1
                 
         finalMessage = 'game over'
         s.sendto(finalMessage.encode(), adress)
 
-        file.close()
-        #numberOfSends = math.floor(replySize/(1024*64))
-        #if replySize/(1024*64) - numberOfSends != 0:
-        #   numberOfSends = numberOfSends + 1
-        #numberOfSends = str(numberOfSends).encode()
         
-        #if replySize/1024 < 64:
-        #    s.sendto(reply, adress)
+        data, adress = s.recvfrom(1024)
+        data = data.decode()
 
-        #else:
+        if data == "OK":
+            print("Envio realizado com sucesso \n\n")
+          
+        else:
+            print("\nReenvio de arquivos necessário")
+            file = open(fileToOpen, "rt")
+            if not file:
+                print("Erro ao abrir arquivo")
+                sys.exit()
+
+            data = data.split(",")
+            dataLenght = len(data)
+            j = 0
+            i = 1
+            reply = file.read(1024)
+            while j<dataLenght:
+                if int(data[j]) == i:
+                    print(reply)
+                    s.sendto(reply.encode(), adress)
+                    j = j + 1
+                reply = file.read(1024)
+                i = i + 1
+            print("Finalizando reenvio de arquivos \n\n")
+
+        file.close()
 
 
-        sys.exit()
-
-
-
-        #s.sendto(reply, adress)
 
 
 def main():
