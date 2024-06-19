@@ -1,8 +1,6 @@
 import socket
 import sys
 import os
-import time
-from hashlib import md5
 from threading import Thread
  
 
@@ -89,23 +87,22 @@ def abreArq(socket, dataList):
  
 # função principal que roda na thread
 def threaded(clientSocket, threadNumber):
-    while True:
         
-        # recebe mensagem e decodifica
-        data = clientSocket.recv(1024)
-        data = data.decode()
-        print("Recebendo requisição da thread " + str(threadNumber))
+    # recebe mensagem e decodifica
+    data = clientSocket.recv(1024)
+    data = data.decode()
+    print("Recebendo requisição da thread " + str(threadNumber))
+    lines = data.split("\n")
+    line1 = lines[0].split(" ")
 
-        lines = data.split("\n")
-        line1 = lines[0].split(" ")
+    if line1[0] == "GET":
+        abreArq(clientSocket, line1[1])
+    
+    else:
+        message = "HTTP/1.1 400 Bad Request"
+        clientSocket.send(message.encode())
 
-        if line1[0] == "GET":
-            abreArq(clientSocket, line1[1])
-        
-        else:
-            message = "HTTP/1.1 400 Bad Request"
-            clientSocket.send(message.encode())
-            break
+    clientSocket.close()
 
  
  
