@@ -34,6 +34,9 @@ def optionArq(socket):
     res = res.decode()
 
     if res == "NOT FOUND":
+        print("O arquivo requisitado não existe")
+        print("\nAperte a tecla ENTER para continuar")
+        input()
         return
     
     # caso de sucesso - divide resposta em número de pacotes e hash do arquivo
@@ -143,7 +146,6 @@ def Main():
             print("Opção inválida")
             continue
  
-
  
 if __name__ == '__main__':
     Main()
